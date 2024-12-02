@@ -27,7 +27,8 @@ pub fn main() {
 
   let safe_rows =
     rows
-    |> list.filter(is_safe)
+    |> list.map(variations)
+    |> list.filter(fn(nss) { nss |> list.any(is_safe) })
 
   io.println(int.to_string(list.length(safe_rows)))
 }
@@ -38,6 +39,17 @@ fn is_safe(ns: List(Int)) -> Bool {
   let sorted = ascending || descending
 
   sorted && difference(ns, 1, 3)
+}
+
+fn variations(ns: List(Int)) -> List(List(Int)) {
+  case ns {
+    [] -> [[]]
+    [head, ..tail] -> {
+      let tail_variations = variations(tail)
+      let with_head = tail_variations |> list.map(fn(v) { [head, ..v] })
+      [tail, ..with_head]
+    }
+  }
 }
 
 fn difference(ns: List(Int), min: Int, max: Int) -> Bool {
