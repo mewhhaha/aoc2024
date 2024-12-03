@@ -43,26 +43,16 @@ fn either_try(e: Either(a, b), f: fn(b) -> Either(a, b)) -> Either(a, b) {
 
 fn compute_muls(s: String, state: State) -> Either(List(#(Int, Int)), Nil) {
   use _ <- either_try({
-    case s {
-      "" -> Left(state.muls)
-      "do()" <> rest -> {
+    case s, state.do {
+      "", _ -> Left(state.muls)
+      "do()" <> rest, _ -> {
         compute_muls(rest, Muls(..state, do: True))
       }
-      "don't()" <> rest -> {
+      "don't()" <> rest, _ -> {
         compute_muls(rest, Muls(..state, do: False))
       }
-      _ -> Right(Nil)
-    }
-  })
-
-  use _ <- either_try({
-    case state.do {
-      False -> {
-        compute_muls(string.drop_start(s, 1), state)
-      }
-      True -> {
-        Right(Nil)
-      }
+      _, False -> compute_muls(string.drop_start(s, 1), state)
+      _, True -> Right(Nil)
     }
   })
 
