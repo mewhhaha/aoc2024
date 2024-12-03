@@ -56,29 +56,13 @@ fn compute_muls(s: String, state: State) -> Either(List(#(Int, Int)), Nil) {
   use _ <- either_try({
     case s {
       "" -> Left(state.muls)
-      _ -> Right(Nil)
-    }
-  })
-
-  use _ <- either_try({
-    case s {
       "do()" <> rest -> {
         compute_muls(rest, Muls(..state, do: True))
       }
-      _ -> {
-        Right(Nil)
-      }
-    }
-  })
-
-  use _ <- either_try({
-    case s {
       "don't()" <> rest -> {
         compute_muls(rest, Muls(..state, do: False))
       }
-      _ -> {
-        Right(Nil)
-      }
+      _ -> Right(Nil)
     }
   })
 
