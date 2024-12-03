@@ -61,10 +61,9 @@ fn compute_muls(s: String, state: State) -> Either(List(#(Int, Int)), Nil) {
   })
 
   use _ <- either_try({
-    case regexp.scan(state.re_do, s) {
-      [match] -> {
-        let next = string.drop_start(s, string.length(match.content))
-        compute_muls(next, Muls(..state, do: True))
+    case s {
+      "do()" <> rest -> {
+        compute_muls(rest, Muls(..state, do: True))
       }
       _ -> {
         Right(Nil)
@@ -73,10 +72,9 @@ fn compute_muls(s: String, state: State) -> Either(List(#(Int, Int)), Nil) {
   })
 
   use _ <- either_try({
-    case regexp.scan(state.re_dont, s) {
-      [match] -> {
-        let next = string.drop_start(s, string.length(match.content))
-        compute_muls(next, Muls(..state, do: False))
+    case s {
+      "don't()" <> rest -> {
+        compute_muls(rest, Muls(..state, do: False))
       }
       _ -> {
         Right(Nil)
