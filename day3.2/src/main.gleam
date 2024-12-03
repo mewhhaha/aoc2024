@@ -6,9 +6,6 @@ import gleam/option.{Some}
 import gleam/regexp
 import gleam/string
 
-type Mul =
-  #(Int, Int)
-
 pub fn main() {
   let t = lines()
 
@@ -19,7 +16,7 @@ pub fn main() {
   let assert Ok(re_dont) = regexp.compile("^don't\\(\\)", options)
   let assert Ok(re_mul) = regexp.compile("^mul\\(([0-9]+),([0-9]+)\\)", options)
 
-  let muls =
+  let assert Left(muls) =
     compute_muls(
       single_string,
       Muls(muls: [], do: True, re_do: re_do, re_dont: re_dont, re_mul: re_mul),
@@ -35,7 +32,7 @@ pub fn main() {
 
 type State {
   Muls(
-    muls: List(Mul),
+    muls: List(#(Int, Int)),
     do: Bool,
     re_do: regexp.Regexp,
     re_dont: regexp.Regexp,
@@ -43,46 +40,74 @@ type State {
   )
 }
 
-fn compute_muls(s: String, state: State) -> List(Mul) {
-  let next = string.drop_start(s, 1)
+type Either(a, b) {
+  Left(a)
+  Right(b)
+}
 
-  case s, state.do {
-    "", _ -> state.muls
-    s, True -> {
-      case regexp.scan(state.re_dont, s) {
-        [match] -> {
-          let next = string.drop_start(s, string.length(match.content))
-          compute_muls(next, Muls(..state, do: False))
-        }
-        _ -> {
-          let matches = regexp.scan(state.re_mul, s)
-          case matches {
-            [match] -> {
-              let assert [Some(a), Some(b)] = match.submatches
-              let assert Ok(ia) = int.parse(a)
-              let assert Ok(ib) = int.parse(b)
-              compute_muls(
-                string.drop_start(s, string.length(match.content)),
-                Muls(..state, muls: state.muls |> list.append([#(ia, ib)])),
-              )
-            }
-            _ -> {
-              compute_muls(string.drop_start(s, 1), state)
-            }
-          }
-        }
+fn either_try(e: Either(a, b), f: fn(b) -> Either(a, b)) -> Either(a, b) {
+  case e {
+    Left(a) -> Left(a)
+    Right(b) -> f(b)
+  }
+}
+
+fn compute_muls(s: String, state: State) -> Either(List(#(Int, Int)), Nil) {
+  use _ <- either_try({
+    case s {
+      "" -> Left(state.muls)
+      _ -> Right(Nil)
+    }
+  })
+
+  use _ <- either_try({
+    case regexp.scan(state.re_do, s) {
+      [match] -> {
+        let next = string.drop_start(s, string.length(match.content))
+        compute_muls(next, Muls(..state, do: True))
+      }
+      _ -> {
+        Right(Nil)
       }
     }
-    s, False -> {
-      case regexp.scan(state.re_do, s) {
-        [match] -> {
-          let next = string.drop_start(s, string.length(match.content))
-          compute_muls(next, Muls(..state, do: True))
-        }
-        _ -> {
-          compute_muls(next, state)
-        }
+  })
+
+  use _ <- either_try({
+    case regexp.scan(state.re_dont, s) {
+      [match] -> {
+        let next = string.drop_start(s, string.length(match.content))
+        compute_muls(next, Muls(..state, do: False))
       }
+      _ -> {
+        Right(Nil)
+      }
+    }
+  })
+
+  use _ <- either_try({
+    case state.do {
+      False -> {
+        compute_muls(string.drop_start(s, 1), state)
+      }
+      True -> {
+        Right(Nil)
+      }
+    }
+  })
+
+  let matches = regexp.scan(state.re_mul, s)
+  case matches {
+    [match] -> {
+      let assert [Some(a), Some(b)] = match.submatches
+      let assert Ok(ia) = int.parse(a)
+      let assert Ok(ib) = int.parse(b)
+      compute_muls(
+        string.drop_start(s, string.length(match.content)),
+        Muls(..state, muls: state.muls |> list.append([#(ia, ib)])),
+      )
+    }
+    _ -> {
+      compute_muls(string.drop_start(s, 1), state)
     }
   }
 }
