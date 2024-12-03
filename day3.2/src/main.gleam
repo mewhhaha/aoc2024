@@ -12,15 +12,10 @@ pub fn main() {
   let single_string = t |> list.map(string.trim) |> string.join("")
 
   let options = regexp.Options(case_insensitive: False, multi_line: False)
-  let assert Ok(re_do) = regexp.compile("^do\\(\\)", options)
-  let assert Ok(re_dont) = regexp.compile("^don't\\(\\)", options)
   let assert Ok(re_mul) = regexp.compile("^mul\\(([0-9]+),([0-9]+)\\)", options)
 
   let assert Left(muls) =
-    compute_muls(
-      single_string,
-      Muls(muls: [], do: True, re_do: re_do, re_dont: re_dont, re_mul: re_mul),
-    )
+    compute_muls(single_string, Muls(muls: [], do: True, re_mul: re_mul))
 
   let assert Ok(result) =
     muls
@@ -31,13 +26,7 @@ pub fn main() {
 }
 
 type State {
-  Muls(
-    muls: List(#(Int, Int)),
-    do: Bool,
-    re_do: regexp.Regexp,
-    re_dont: regexp.Regexp,
-    re_mul: regexp.Regexp,
-  )
+  Muls(muls: List(#(Int, Int)), do: Bool, re_mul: regexp.Regexp)
 }
 
 type Either(a, b) {
