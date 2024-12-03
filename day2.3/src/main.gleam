@@ -14,7 +14,16 @@ pub fn main() {
 
   let single_string = t |> list.map(string.trim) |> string.join("")
 
-  let muls = parse_muls(single_string)
+  let options = regexp.Options(case_insensitive: False, multi_line: False)
+  let assert Ok(re_do) = regexp.compile("^do\\(\\)", options)
+  let assert Ok(re_dont) = regexp.compile("^don't\\(\\)", options)
+  let assert Ok(re_mul) = regexp.compile("^mul\\(([0-9]+),([0-9]+)\\)", options)
+
+  let muls =
+    compute_muls(
+      single_string,
+      Muls(muls: [], do: True, re_do: re_do, re_dont: re_dont, re_mul: re_mul),
+    )
 
   let assert Ok(result) =
     muls
@@ -22,22 +31,60 @@ pub fn main() {
     |> list.reduce(int.add)
 
   io.println(int.to_string(result))
-  // io.println(int.to_string(list.length(safe_rows)))
 }
 
-fn parse_muls(s: String) -> List(Mul) {
-  let options = regexp.Options(case_insensitive: False, multi_line: False)
-  let assert Ok(re) = regexp.compile("mul\\(([0-9]+),([0-9]+)\\)", options)
+type State {
+  Muls(
+    muls: List(Mul),
+    do: Bool,
+    re_do: regexp.Regexp,
+    re_dont: regexp.Regexp,
+    re_mul: regexp.Regexp,
+  )
+}
 
-  let matches = regexp.scan(re, s)
+fn compute_muls(s: String, state: State) -> List(Mul) {
+  let next = string.drop_start(s, 1)
 
-  matches
-  |> list.map(fn(m) {
-    let assert [Some(a), Some(b)] = m.submatches
-    let assert Ok(ia) = int.parse(a)
-    let assert Ok(ib) = int.parse(b)
-    #(ia, ib)
-  })
+  case s, state.do {
+    "", _ -> state.muls
+    s, True -> {
+      case regexp.scan(state.re_dont, s) {
+        [match] -> {
+          let next = string.drop_start(s, string.length(match.content))
+          compute_muls(next, Muls(..state, do: False))
+        }
+        _ -> {
+          let matches = regexp.scan(state.re_mul, s)
+          case matches {
+            [match] -> {
+              let assert [Some(a), Some(b)] = match.submatches
+              let assert Ok(ia) = int.parse(a)
+              let assert Ok(ib) = int.parse(b)
+              compute_muls(
+                string.drop_start(s, string.length(match.content)),
+                Muls(..state, muls: state.muls |> list.append([#(ia, ib)])),
+              )
+            }
+            _ -> {
+              compute_muls(string.drop_start(s, 1), state)
+            }
+          }
+        }
+      }
+    }
+    s, False -> {
+      case regexp.scan(state.re_do, s) {
+        [match] -> {
+          let next = string.drop_start(s, string.length(match.content))
+          compute_muls(next, Muls(..state, do: True))
+        }
+        _ -> {
+          compute_muls(next, state)
+        }
+      }
+    }
+  }
 }
 
 fn lines() -> List(String) {
