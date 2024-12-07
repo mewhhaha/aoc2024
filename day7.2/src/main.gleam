@@ -4,27 +4,19 @@ import gleam/io
 import gleam/list
 import gleam/string
 
-type Calibration {
-  Equation(Int, List(Int))
-}
-
 pub fn main() {
   let t = lines()
 
   let calibrations = t |> list.map(parse_line)
 
   let valid_calibrations = {
-    use Equation(result, values) <- fn(f) { calibrations |> list.filter(f) }
+    use #(result, values) <- fn(f) { calibrations |> list.filter(f) }
     calibrate(values) |> list.any(fn(v) { v == result })
   }
 
   let valid_results =
     valid_calibrations
-    |> list.map(fn(equation) {
-      case equation {
-        Equation(result, _) -> result
-      }
-    })
+    |> list.map(fn(equation) { equation.0 })
   let assert Ok(result) = valid_results |> list.reduce(int.add)
 
   io.println(result |> int.to_string)
@@ -62,7 +54,7 @@ fn parse_line(line: String) {
       n
     })
 
-  Equation(result, values)
+  #(result, values)
 }
 
 fn lines() -> List(String) {
