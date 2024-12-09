@@ -1,4 +1,3 @@
-import gleam/dict
 import gleam/erlang
 import gleam/int
 import gleam/io
@@ -10,38 +9,38 @@ pub fn main() {
   let assert [t] = lines()
 
   let parsed = parse_memory(t)
-  let defragmented = defragment(parsed)
+  let compacted = compact(parsed)
 
   let assert Ok(result) =
-    defragmented
+    compacted
     |> list.index_map(fn(v, i) { v * i })
     |> list.reduce(int.add)
 
   io.println(result |> int.to_string)
 }
 
-fn defragment(memory_layout: List(option.Option(Int))) {
+fn compact(memory_layout: List(option.Option(Int))) {
   let numbers = memory_layout |> list.filter(option.is_some) |> list.length
-  let memory = do_defragment([], memory_layout, memory_layout |> list.reverse)
+  let memory = do_compact([], memory_layout, memory_layout |> list.reverse)
   memory |> list.take(numbers)
 }
 
-fn do_defragment(
+fn do_compact(
   acc: List(Int),
   left: List(option.Option(Int)),
   right: List(option.Option(Int)),
 ) {
   case left, right {
     [None, ..tail], [None, ..r] -> {
-      do_defragment(acc, [None, ..tail], r)
+      do_compact(acc, [None, ..tail], r)
     }
     [None, ..tail], [Some(head), ..r] -> {
       let new_acc = [head, ..acc]
-      do_defragment(new_acc, tail, r)
+      do_compact(new_acc, tail, r)
     }
     [Some(head), ..tail], r -> {
       let new_acc = [head, ..acc]
-      do_defragment(new_acc, tail, r)
+      do_compact(new_acc, tail, r)
     }
     _, _ -> acc |> list.reverse
   }
