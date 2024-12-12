@@ -3,7 +3,6 @@ import gleam/erlang
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/set
 import gleam/string
 
 pub fn main() {
