@@ -5,4 +5,6 @@ cd day 2.1
 cat test.txt | gleam run
 # input
 cat input.txt | gleam run
+# Measure using powershell
+Measure-Command { cat input.txt | gleam run }
 ```
