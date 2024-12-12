@@ -3,6 +3,7 @@ import gleam/erlang
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/set
 import gleam/string
 
 pub fn main() {
@@ -31,37 +32,30 @@ fn iterate_blink(stones: List(Int), n: Int) {
     }
     _ -> {
       let grouped_stones =
-        stones |> group_by_number |> list.map(fn(v) { #(v.0, v.1, blink(v.0)) })
+        stones |> list.map(fn(v) { #(v, blink(v)) }) |> dict.from_list
 
-      let next_stones = grouped_stones |> list.flat_map(fn(v) { v.2 })
+      let next_stones = grouped_stones |> dict.values |> list.flatten
 
       let next_scores = iterate_blink(next_stones, n - 1)
 
-      let scores =
-        grouped_stones
-        |> list.map(fn(v) {
-          let score =
-            v.2
-            |> list.map(fn(w) {
-              let assert Ok(score) = next_scores |> dict.get(w)
-              score
-            })
-            |> list.fold(0, int.add)
-
-          #(v.0, score)
-        })
-        |> dict.from_list
-
-      scores
+      deferred_scores(grouped_stones, next_scores)
     }
   }
 }
 
-fn group_by_number(stones: List(Int)) {
-  stones
-  |> list.group(fn(stone) { stone })
-  |> dict.map_values(fn(k, v) { #(k, list.length(v)) })
-  |> dict.values
+fn deferred_scores(
+  grouped_stones: dict.Dict(Int, List(Int)),
+  next_scores: dict.Dict(Int, Int),
+) {
+  let scores = {
+    use _, values <- fn(f) { grouped_stones |> dict.map_values(f) }
+    use acc, w <- fn(f) { values |> list.fold(0, f) }
+
+    let assert Ok(score) = next_scores |> dict.get(w)
+    acc + score
+  }
+
+  scores
 }
 
 fn blink(stone: Int) {
