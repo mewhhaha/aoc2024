@@ -86,6 +86,8 @@ fn do_calc_button_presses(a: #(Int, Int), b: #(Int, Int), prize: #(Int, Int)) {
 
   let press_b = { c3 * c4 - c1 * c6 } / { c2 * c4 - c1 * c5 }
 
+  // Instead of checking for the mathematical precondition if this will solve
+  // we just compare it to the prize
   case tuple_add(scale(a, press_a), scale(b, press_b)) == prize {
     True -> Ok(#(press_a, press_b))
     False -> Error(Nil)
