@@ -2,7 +2,7 @@ import gleam/erlang
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{Some}
 import gleam/regexp
 import gleam/string
 
@@ -41,7 +41,7 @@ pub fn main() {
       acc |> list.map(fn(r) { move_robot(r, bounds) })
     })
 
-  print_grid(moved_grid, bounds)
+  // print_grid(moved_grid, bounds)
 
   let result = count_in_quadrants(moved_grid, bounds)
 
