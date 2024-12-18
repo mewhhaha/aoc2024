@@ -98,15 +98,17 @@ fn do_shortest_path(
 
           not_visited && is_empty
         })
+
+      let scored_adjacent =
+        valid_adjacent
         |> list.map(fn(pos) { #(pos, score + 1, g_score(pos, end)) })
 
       let next_queue =
-        bubble(tail, valid_adjacent, fn(a, b) { int.compare(a.2, b.2) })
+        bubble(tail, scored_adjacent, fn(a, b) { int.compare(a.2, b.2) })
 
       let next_visited =
-        adjacent
-        |> set.from_list()
-        |> set.union(visited)
+        valid_adjacent
+        |> list.fold(visited, fn(acc, pos) { set.insert(acc, pos) })
 
       do_shortest_path(carta, end, next_visited, next_queue)
     }
