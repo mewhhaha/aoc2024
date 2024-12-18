@@ -31,6 +31,8 @@ pub fn main() {
   let start = #(0, 0)
   let end = #(w, h)
 
+  // Pretty sure you could generate all the carta variations
+  // and then use binary search for faster performance
   let assert Ok(result) =
     find_first_blocking_position(positions, carta, start, end)
 
