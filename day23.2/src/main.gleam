@@ -1,6 +1,5 @@
 import gleam/dict
 import gleam/erlang
-import gleam/int
 import gleam/io
 import gleam/list
 import gleam/set
@@ -20,49 +19,69 @@ pub fn main() {
       v |> list.map(fn(v) { v.1 }) |> set.from_list
     })
 
-  let valid_combinations = {
-    use c0 <- fn(f) { connections |> dict.keys |> list.flat_map(f) }
+  let max_size = connections |> dict.size
+  let assert Ok(network) =
+    iterate_until(#(3, []), fn(prev) {
+      let #(network_length, last_network) = prev
 
-    let assert Ok(adjacent) = connections |> dict.get(c0)
+      case network_length >= max_size {
+        True -> Ok(last_network)
 
-    let combinations = adjacent |> set.to_list |> list.combinations(2)
+        False -> {
+          let valid =
+            connections
+            |> dict.keys
+            |> list.find_map(fn(key) {
+              has_valid_network_of_size(connections, key, network_length)
+            })
 
-    use cs <- fn(f) { combinations |> list.filter_map(f) }
+          case valid {
+            Ok(network) -> Error(#(network_length + 1, network))
+            Error(_) -> Ok(last_network)
+          }
+        }
+      }
+    })
 
-    let all = [c0, ..cs] |> set.from_list
-    let permutations =
-      all
-      |> set.to_list
-      |> list.map(fn(v) { #(v, all |> set.delete(v)) })
-
-    case
-      permutations
-      |> list.all(fn(v) {
-        let #(head, tail) = v
-
-        let assert Ok(adj_head) = connections |> dict.get(head)
-        let intersection = tail |> set.intersection(adj_head)
-        intersection |> set.size == 2
-      })
-    {
-      True -> Ok([c0, ..cs] |> list.sort(string.compare))
-      False -> Error(Nil)
-    }
-  }
-
-  let unique_valid_combinations =
-    valid_combinations |> set.from_list |> set.to_list
-
-  let combinations_with_t =
-    unique_valid_combinations
-    |> list.count(starts_with_t)
-
-  let result = combinations_with_t
-  io.println(result |> int.to_string)
+  let result = network |> list.sort(string.compare) |> string.join(",")
+  io.println(result)
 }
 
-fn starts_with_t(v: List(String)) -> Bool {
-  v |> list.any(fn(v) { v |> string.starts_with("t") })
+fn iterate_until(b, f: fn(b) -> Result(a, b)) -> Result(a, b) {
+  case f(b) {
+    Error(b) -> iterate_until(b, f)
+    Ok(a) -> Ok(a)
+  }
+}
+
+fn has_valid_network_of_size(
+  connections: dict.Dict(String, set.Set(String)),
+  c0: String,
+  size: Int,
+) {
+  let assert Ok(adjacent) = connections |> dict.get(c0)
+  let combinations = adjacent |> set.to_list |> list.combinations(size - 1)
+  use cs <- fn(f) { combinations |> list.find_map(f) }
+
+  let all = [c0, ..cs] |> set.from_list
+  let permutations =
+    all
+    |> set.to_list
+    |> list.map(fn(v) { #(v, all |> set.delete(v)) })
+
+  case
+    permutations
+    |> list.all(fn(v) {
+      let #(head, tail) = v
+
+      let assert Ok(adj_head) = connections |> dict.get(head)
+      let intersection = tail |> set.intersection(adj_head)
+      intersection |> set.size == size - 1
+    })
+  {
+    True -> Ok([c0, ..cs])
+    False -> Error(Nil)
+  }
 }
 
 fn lines() -> List(String) {
