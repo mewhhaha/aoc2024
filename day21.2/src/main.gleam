@@ -1,13 +1,11 @@
 import gleam/dict
 import gleam/erlang
-import gleam/function
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
 import gleam/order
 import gleam/result
-import gleam/set
 import gleam/string
 
 type Dirpad {
